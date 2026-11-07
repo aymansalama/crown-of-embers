@@ -1,0 +1,95 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #07090d; color: #e9dcc0;
+  font-family: 'Cormorant Garamond', Georgia, serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+canvas#map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.hidden { display: none !important; }
+
+.panel {
+  position: fixed; background: linear-gradient(180deg, rgba(28,22,16,.92), rgba(14,11,8,.94));
+  border: 1px solid #8a6d3b; box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(255,215,140,.12), 0 10px 30px rgba(0,0,0,.6);
+  border-radius: 6px; backdrop-filter: blur(4px);
+}
+.panel::before { content: ''; position: absolute; inset: 3px; border: 1px solid rgba(201,162,92,.25); border-radius: 4px; pointer-events: none; }
+
+#topbar { top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 18px; padding: 6px 18px 6px 8px; white-space: nowrap; }
+#hudSigil { width: 32px; height: 38px; }
+.tb-house #hudHouse { font-family: Cinzel, serif; font-weight: 700; font-size: 16px; color: #f3d9a0; letter-spacing: 1px; }
+.words { font-style: italic; font-size: 13px; color: #b8a27a; }
+.tb-stat { display: flex; flex-direction: column; align-items: center; font-family: Cinzel, serif; font-size: 17px; color: #ffe7b0; }
+.tb-stat .lbl { font-size: 9px; letter-spacing: 2px; color: #a08860; text-transform: uppercase; }
+
+#side { right: 10px; top: 80px; width: 250px; padding: 14px; }
+#regionInfo { min-height: 120px; }
+#regionInfo .rname { font-family: Cinzel, serif; font-size: 20px; color: #f6dfa8; font-weight: 700; }
+#regionInfo .rowner { font-style: italic; color: #c8b088; margin-bottom: 8px; }
+#regionInfo .rrow { display: flex; justify-content: space-between; font-size: 16px; border-bottom: 1px dashed rgba(201,162,92,.2); padding: 3px 0; }
+.hint { font-style: italic; color: #a8936c; font-size: 16px; }
+.btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+button {
+  font-family: Cinzel, serif; font-weight: 700; font-size: 14px; letter-spacing: 1px; color: #f1dcae; cursor: pointer;
+  background: linear-gradient(180deg, #4a3a26, #2a2015); border: 1px solid #9c7c45; border-radius: 4px; padding: 9px 10px;
+  box-shadow: inset 0 1px 0 rgba(255,230,170,.25), 0 2px 6px rgba(0,0,0,.5); transition: filter .15s, transform .1s;
+}
+button small { font-family: 'Cormorant Garamond', serif; font-weight: 500; opacity: .8; }
+button:hover:not(:disabled) { filter: brightness(1.25); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: linear-gradient(180deg, #8f2a1c, #541009); border-color: #e0a85a; color: #ffe9c0; }
+
+#rivals { left: 10px; top: 80px; width: 190px; padding: 10px 12px; font-size: 15px; }
+#rivals .rv { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+#rivals .rv canvas { width: 20px; height: 24px; }
+#rivals .rv .n { flex: 1; font-family: Cinzel, serif; font-size: 12px; }
+#rivals .rv.dead { opacity: .35; text-decoration: line-through; }
+
+#log { left: 10px; bottom: 10px; width: 330px; max-height: 150px; overflow: hidden; padding: 10px 12px; font-size: 15px; line-height: 1.25;
+  mask-image: linear-gradient(0deg, #000 70%, transparent); -webkit-mask-image: linear-gradient(0deg, #000 70%, transparent); display: flex; flex-direction: column; justify-content: flex-end; }
+#log div { opacity: .9; }
+#log b { font-family: Cinzel, serif; font-size: 13px; }
+
+#banner { position: fixed; top: 40%; left: 0; right: 0; text-align: center; pointer-events: none; font-family: Cinzel, serif; font-weight: 900;
+  font-size: clamp(28px, 6vw, 64px); color: #ffe2a0; letter-spacing: 6px; opacity: 0; text-shadow: 0 0 30px rgba(255,140,40,.7), 0 4px 0 #000; transition: opacity .5s; }
+#banner.show { opacity: 1; }
+#banner small { display: block; font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: .4em; letter-spacing: 2px; color: #e7cf9e; }
+
+#title, #endScreen { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto;
+  background: radial-gradient(ellipse at center, rgba(10,8,6,.35), rgba(5,4,3,.92) 75%); }
+.title-inner { max-width: 960px; margin: auto; padding: 30px 20px; text-align: center; }
+.crest { font-size: 54px; color: #e8b25a; text-shadow: 0 0 30px rgba(255,150,40,.8); animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 50% { text-shadow: 0 0 60px rgba(255,120,30,1); transform: scale(1.06); } }
+h1 { font-family: Cinzel, serif; font-weight: 900; font-size: clamp(36px, 8vw, 84px); letter-spacing: 6px;
+  background: linear-gradient(180deg, #fff2cf 10%, #e0a548 55%, #7a4a14); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 0 #000) drop-shadow(0 0 25px rgba(255,140,40,.45)); }
+h2 { font-family: Cinzel, serif; font-weight: 500; letter-spacing: 8px; color: #b99a66; font-size: clamp(12px, 2.2vw, 18px); margin-top: 4px; text-transform: uppercase; }
+.lore { font-size: clamp(16px, 2.3vw, 20px); font-style: italic; color: #d8c49c; max-width: 640px; margin: 22px auto; line-height: 1.4; }
+#houseChoice { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 10px 0 20px; }
+.hcard { width: 160px; padding: 14px 10px 12px; cursor: pointer; border-radius: 6px; border: 1px solid #6d5530;
+  background: linear-gradient(180deg, rgba(40,30,20,.9), rgba(16,12,9,.95)); transition: transform .2s, box-shadow .2s, border-color .2s; }
+.hcard:hover { transform: translateY(-6px); border-color: #f0c070; box-shadow: 0 10px 30px rgba(255,150,50,.25); }
+.hcard canvas { width: 72px; height: 86px; }
+.hcard .hn { font-family: Cinzel, serif; font-weight: 700; color: #f3d9a0; margin-top: 6px; }
+.hcard .hw { font-style: italic; font-size: 14px; color: #a8936c; }
+.hcard .hp { font-size: 13px; color: #cdb98f; margin-top: 6px; }
+.how { font-size: 15px; color: #a8936c; max-width: 640px; margin: 0 auto; line-height: 1.4; }
+.how b { font-family: Cinzel, serif; color: #d8b778; }
+
+@media (max-width: 760px) {
+  #topbar { gap: 10px; padding: 4px 10px 4px 4px; top: 6px; }
+  .tb-house, .tb-stat.realms { display: none; }
+  #hudSigil { width: 22px; height: 26px; }
+  .tb-stat { font-size: 13px; }
+  .tb-stat .lbl { font-size: 8px; letter-spacing: 1px; }
+  #side { top: auto; bottom: 8px; right: 8px; left: 8px; width: auto; padding: 10px; display: flex; gap: 10px; }
+  #regionInfo { flex: 1; min-height: 0; font-size: 14px; }
+  #regionInfo .rname { font-size: 15px; }
+  #regionInfo .rrow { font-size: 13px; padding: 1px 0; }
+  .btns { margin-top: 0; width: 130px; gap: 5px; }
+  button { font-size: 11px; padding: 7px 4px; }
+  #rivals { top: 58px; left: 6px; width: auto; padding: 6px 8px; }
+  #rivals .rv .n { display: none; }
+  #log { display: none; }
+  .hcard { width: calc(50% - 8px); padding: 10px 6px; }
+  .hcard canvas { width: 52px; height: 62px; }
+  .hcard .hn { font-size: 14px; }
+  .lore { margin: 14px auto; }
+}

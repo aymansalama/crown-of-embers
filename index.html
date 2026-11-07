@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Crown of Embers — War for the Throne</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="map"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="topbar" class="panel">
+    <canvas id="hudSigil" width="64" height="76"></canvas>
+    <div class="tb-house"><div id="hudHouse">House</div><div id="hudWords" class="words"></div></div>
+    <div class="tb-stat"><span class="lbl">Gold</span><span id="hudGold">0</span></div>
+    <div class="tb-stat realms"><span class="lbl">Realms</span><span id="hudRealms">0</span></div>
+    <div class="tb-stat"><span class="lbl">Host</span><span id="hudTroops">0</span></div>
+    <div class="tb-stat"><span class="lbl">Turn</span><span id="hudTurn">1</span></div>
+    <div class="tb-stat"><span class="lbl">Throne</span><span id="hudThrone">—</span></div>
+    <div class="tb-stat season"><span class="lbl">Season</span><span id="hudSeason">Spring</span></div>
+  </div>
+
+  <div id="side" class="panel">
+    <div id="regionInfo">
+      <div class="hint">Tap one of your holdings to command it.</div>
+    </div>
+    <div class="btns">
+      <button id="btnRecruit" disabled>Levy Troops <small>(+5 · 10g)</small></button>
+      <button id="btnFortify" disabled>Raise Walls <small>(25g)</small></button>
+      <button id="btnEnd" class="primary">End Turn</button>
+    </div>
+  </div>
+
+  <div id="rivals" class="panel"></div>
+  <div id="log" class="panel"></div>
+  <div id="banner"></div>
+</div>
+
+<div id="title">
+  <div class="title-inner">
+    <div class="crest">♛</div>
+    <h1>Crown of Embers</h1>
+    <h2>War for the Ember Throne</h2>
+    <p class="lore">The old king is dead. Five great houses gather their banners across the realm of Aldmere.
+      Seize the Ember Throne and hold it for three turns — or break every rival house — to claim the crown.</p>
+    <div id="houseChoice"></div>
+    <div class="how">
+      <b>How to play</b> · Tap your holding, then tap a neighbour to march (enemy = battle).
+      Levy troops with gold. Walls make holdings harder to take. Winter halves income and bleeds armies.
+      Drag to pan · scroll / pinch to zoom.
+    </div>
+  </div>
+</div>
+
+<div id="endScreen" class="hidden">
+  <div class="title-inner">
+    <h1 id="endTitle">Victory</h1>
+    <p id="endText" class="lore"></p>
+    <button id="btnAgain" class="primary">Play Again</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
