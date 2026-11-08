@@ -660,6 +660,7 @@ const season = () => Math.floor((G.round - 1) / 3) % 4;
 function march(fromId, toId, n) {
   const A = regions[fromId], h = A.owner;
   A.troops -= n; A.moved = true;
+  if (h === G.player || regions[toId].owner === G.player) Sfx.play('march');
   return new Promise(res => {
     armies.push({ from: fromId, to: toId, n, h, t: 0, dur: (h === G.player ? .75 : .45) * (FAST ? .02 : 1), done: () => { resolveMarch(h, fromId, toId, n); res(); } });
   });
@@ -671,6 +672,7 @@ function resolveMarch(h, fromId, toId, n) {
   const def = defStrength(B) * rr(.85, 1.15);
   const prevOwner = B.owner;
   burst(B.x, B.y, 1);
+  Sfx.play('battle');
   if (att > def) {
     const surv = Math.max(1, Math.round(n * Math.sqrt(1 - (def / att) ** 2)));
     floatText(B.x, B.y - 30, `-${n - surv}`, '#ffb070');
@@ -686,12 +688,13 @@ function resolveMarch(h, fromId, toId, n) {
       if (prevOwner !== G.player) showBanner(`House ${HOUSES[prevOwner].name} falls`, `Broken by ${HOUSES[h].name}`, 2200);
     }
     if (h === G.player) sfxShake(6);
+    if (h === G.player || B.id === throneId) Sfx.play('conquest');
   } else {
     const surv = Math.max(1, Math.round(B.troops * Math.sqrt(1 - (att / def) ** 2)));
     floatText(B.x, B.y - 30, `-${B.troops - surv}`, '#ffb070');
     floatText(B.x - 22, B.y - 14, `-${n}`, '#ff6050');
     B.troops = surv;
-    if (h === G.player) log(`Our assault on <b>${B.name}</b> was repelled.`);
+    if (h === G.player) { log(`Our assault on <b>${B.name}</b> was repelled.`); Sfx.play('repelled'); }
     else if (prevOwner === G.player) log(`${hn(h)} broke upon the walls of <b>${B.name}</b>.`);
     sfxShake(3);
   }
@@ -784,7 +787,7 @@ async function endTurn() {
   } else G.throne = { owner: -1, count: 0 };
   const prevSeason = season();
   G.round++;
-  if (season() !== prevSeason) showBanner(SEASONS[season()].name, SEASONS[season()].sub, 2400);
+  if (season() !== prevSeason) { showBanner(SEASONS[season()].name, SEASONS[season()].sub, 2400); Sfx.play('bell'); }
   const inc = startHouseTurn(G.player);
   log(`Turn ${G.round}: the treasury gains <b>${inc}</b> gold.`);
   busy = false;
@@ -799,6 +802,7 @@ function checkEnd() {
 function finish(win, text) {
   G.over = true; busy = true;
   setTimeout(() => {
+    Sfx.play('fanfare', win);
     $('endTitle').textContent = win ? 'Victory' : 'Defeat';
     $('endText').textContent = text;
     $('endScreen').classList.remove('hidden');
@@ -817,7 +821,7 @@ function onTap(sx, sy) {
   const R = regions[r];
   if (selected >= 0 && r !== selected && neighbors(regions[selected]).includes(r)) {
     const A = regions[selected];
-    const n = A.troops - 1;
+    const n = Math.max(1, Math.round((A.troops - 1) * marchFrac));
     if (n > 0) {
       busy = true; const from = selected; selected = -1;
       march(from, r, n).then(() => { busy = G.over; inspected = r; if (regions[r].owner === G.player && !regions[r].moved) selected = r; updateHUD(); });
@@ -825,7 +829,7 @@ function onTap(sx, sy) {
     updateHUD(); return;
   }
   if (selected === r) { selected = -1; inspected = r; }
-  else if (R.owner === G.player && !R.moved && R.troops > 1) { selected = r; inspected = r; }
+  else if (R.owner === G.player && !R.moved && R.troops > 1) { selected = r; inspected = r; Sfx.play('click'); }
   else { selected = -1; inspected = r; }
   updateHUD();
 }
@@ -839,19 +843,29 @@ function pickRegion(x, y) {
 }
 $('btnRecruit').onclick = () => {
   const R = regions[inspected]; if (!R || R.owner !== G.player || G.gold[G.player] < 10 || busy) return;
-  G.gold[G.player] -= 10; R.troops += 5; floatText(R.x, R.y - 30, '+5', '#ffe08a'); ring(R.x, R.y, '#ffe08a'); updateHUD();
+  G.gold[G.player] -= 10; R.troops += 5; floatText(R.x, R.y - 30, '+5', '#ffe08a'); ring(R.x, R.y, '#ffe08a'); Sfx.play('coin'); updateHUD();
 };
 $('btnFortify').onclick = () => {
   const R = regions[inspected]; if (!R || R.owner !== G.player || G.gold[G.player] < 25 || R.walls >= 3 || busy) return;
-  G.gold[G.player] -= 25; R.walls++; floatText(R.x, R.y - 30, 'Walls raised', '#e0e0ff'); ring(R.x, R.y, '#dfe6ff'); updateHUD();
+  G.gold[G.player] -= 25; R.walls++; floatText(R.x, R.y - 30, 'Walls raised', '#e0e0ff'); ring(R.x, R.y, '#dfe6ff'); Sfx.play('build'); updateHUD();
 };
 $('btnEnd').onclick = endTurn;
+let marchFrac = 1;
+const MARCH_OPTS = [[1, 'All'], [.5, 'Half'], [.25, 'Quarter']];
+$('btnSplit').onclick = () => {
+  const k = (MARCH_OPTS.findIndex(o => o[0] === marchFrac) + 1) % MARCH_OPTS.length;
+  marchFrac = MARCH_OPTS[k][0]; $('btnSplit').querySelector('b').textContent = MARCH_OPTS[k][1]; Sfx.play('click'); updateHUD();
+};
+const muteBtn = $('btnMute');
+const syncMute = () => { muteBtn.textContent = Sfx.muted ? '🔇' : '🔊'; };
+muteBtn.onclick = () => { Sfx.init(); Sfx.toggle(); syncMute(); };
 $('btnAgain').onclick = () => { $('endScreen').classList.add('hidden'); newWorld(); showTitle(); };
 addEventListener('keydown', e => {
   if (!G || $('hud').classList.contains('hidden')) return;
   if (e.key === 'Enter' || e.key === 'e') endTurn();
   if (e.key === 'r') $('btnRecruit').click();
   if (e.key === 'f') $('btnFortify').click();
+  if (e.key === 'h') $('btnSplit').click();
   if (e.key === 'Escape') { selected = -1; updateHUD(); }
 });
 
@@ -879,7 +893,7 @@ function updateHUD() {
   $('hudTurn').textContent = G.round;
   $('hudSeason').textContent = SEASONS[season()].name;
   const tO = regions[throneId].owner;
-  $('hudThrone').innerHTML = tO < 0 ? 'Unclaimed' : `<span style="color:${HOUSES[tO].map}">${HOUSES[tO].name}</span> ${tO === G.throne.owner ? G.throne.count : 0}/3`;
+  $('hudThrone').innerHTML = tO < 0 ? 'Unclaimed' : `<span style="color:${HOUSES[tO].map}">${HOUSES[tO].name}</span> ${tO === G.throne.owner ? G.throne.count + '/3' : '(seized)'}`;
   HOUSES.forEach((_, h) => {
     const row = rivalCanvases[h]; if (!row) return;
     const o = owned(h);
@@ -899,7 +913,7 @@ function updateHUD() {
       <div class="rrow"><span>Garrison</span><span>${R.troops}</span></div>
       <div class="rrow"><span>Walls</span><span>${'▮'.repeat(R.walls) || 'none'}</span></div>
       <div class="rrow"><span>Income</span><span>${R.income}g</span></div>
-      ${R.owner === p ? `<div class="rrow"><span>Orders</span><span>${R.moved ? 'spent' : selected === R.id ? 'select target' : 'ready'}</span></div>` : ''}`;
+      ${R.owner === p ? `<div class="rrow"><span>Orders</span><span>${R.moved ? 'spent' : selected === R.id ? `march ${Math.max(1, Math.round((R.troops - 1) * marchFrac))} →` : 'ready'}</span></div>` : ''}`;
   }
   const mineSel = R && R.owner === p && !busy;
   $('btnRecruit').disabled = !(mineSel && G.gold[p] >= 10);
@@ -979,6 +993,66 @@ cv.addEventListener('wheel', e => {
   cam.z *= Math.exp(-e.deltaY * .0015); clampCam();
   cam.x = w.x - (e.clientX - sw / 2) / cam.z; cam.y = w.y - (e.clientY - sh / 2) / cam.z; clampCam();
 }, { passive: false });
+
+// ---------------------------------------------------------------------------
+// Audio (procedural, WebAudio)
+// ---------------------------------------------------------------------------
+const Sfx = (() => {
+  let ac = null, master = null, noiseBuf = null;
+  let muted = localStorage.getItem('ce-muted') === '1';
+  function init() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    ac = new AC(); master = ac.createGain(); master.gain.value = muted ? 0 : .6; master.connect(ac.destination);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    // ambient wind
+    const wind = ac.createBufferSource(); wind.buffer = noiseBuf; wind.loop = true;
+    const wf = ac.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 400; wf.Q.value = .6;
+    const wg = ac.createGain(); wg.gain.value = .035;
+    const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = .08; lg.gain.value = 220;
+    lfo.connect(lg); lg.connect(wf.frequency); lfo.start();
+    wind.connect(wf); wf.connect(wg); wg.connect(master); wind.start();
+  }
+  function env(g, t, a, peak, dec) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + dec); }
+  function noise(t, dur, freq, type, peak) {
+    const s = ac.createBufferSource(); s.buffer = noiseBuf;
+    const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+    const g = ac.createGain(); env(g, t, .005, peak, dur);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random()); s.stop(t + dur + .1);
+  }
+  function tone(t, freq, dur, type, peak, glide) {
+    const o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (glide) o.frequency.exponentialRampToValueAtTime(glide, t + dur);
+    const g = ac.createGain(); env(g, t, .01, peak, dur);
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200;
+    o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .1);
+  }
+  const play = {
+    click() { const t = ac.currentTime; tone(t, 900, .05, 'triangle', .08); },
+    march() { const t = ac.currentTime; for (let k = 0; k < 3; k++) { tone(t + k * .16, 90, .18, 'sine', .35, 45); noise(t + k * .16, .08, 300, 'lowpass', .15); } },
+    battle() {
+      const t = ac.currentTime; tone(t, 70, .5, 'sine', .6, 30); noise(t, .45, 1200, 'bandpass', .5);
+      for (let k = 0; k < 4; k++) { const tt = t + .05 + k * .09 + Math.random() * .04; tone(tt, 1800 + Math.random() * 1400, .12, 'square', .05); noise(tt, .06, 5000, 'highpass', .25); }
+    },
+    conquest() { const t = ac.currentTime + .1; tone(t, 196, .35, 'sawtooth', .16); tone(t + .3, 294, .7, 'sawtooth', .18); tone(t + .3, 147, .7, 'sawtooth', .1); },
+    repelled() { const t = ac.currentTime + .1; tone(t, 220, .3, 'sawtooth', .12, 180); tone(t + .25, 165, .6, 'sawtooth', .12, 130); },
+    coin() { const t = ac.currentTime; tone(t, 1320, .12, 'triangle', .14); tone(t + .07, 1760, .25, 'triangle', .12); },
+    build() { const t = ac.currentTime; for (let k = 0; k < 3; k++) { noise(t + k * .12, .07, 900, 'bandpass', .35); tone(t + k * .12, 160, .08, 'square', .06); } },
+    bell() { const t = ac.currentTime; for (const [f, a] of [[392, .2], [784, .08], [1176, .04]]) tone(t, f, 2.2, 'sine', a); },
+    fanfare(win) {
+      const t = ac.currentTime, seq = win ? [262, 330, 392, 523] : [392, 349, 311, 262];
+      seq.forEach((f, k) => { tone(t + k * .28, f, .6 + (k === 3 ? 1.2 : 0), 'sawtooth', .13); tone(t + k * .28, f / 2, .6 + (k === 3 ? 1.2 : 0), 'triangle', .1); });
+    },
+  };
+  return {
+    init,
+    play(name, ...a) { if (ac && !muted && !FAST) play[name](...a); },
+    get muted() { return muted; },
+    toggle() { muted = !muted; localStorage.setItem('ce-muted', muted ? '1' : '0'); if (master) master.gain.value = muted ? 0 : .6; return muted; },
+  };
+})();
+addEventListener('pointerdown', () => Sfx.init(), true);
 
 // ---------------------------------------------------------------------------
 // Particles & FX
@@ -1324,6 +1398,7 @@ function startGame(h) {
   updateHUD();
 }
 
+syncMute();
 resize();
 newWorld();
 showTitle();

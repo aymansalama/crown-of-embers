@@ -83,7 +83,8 @@ h2 { font-family: Cinzel, serif; font-weight: 500; letter-spacing: 8px; color: #
   #regionInfo { flex: 1; min-height: 0; font-size: 14px; }
   #regionInfo .rname { font-size: 15px; }
   #regionInfo .rrow { font-size: 13px; padding: 1px 0; }
-  .btns { margin-top: 0; width: 130px; gap: 5px; }
+  .btns { margin-top: 0; width: 130px; gap: 4px; }
+  #btnMute { font-size: 13px; padding: 3px 5px; }
   button { font-size: 11px; padding: 7px 4px; }
   #rivals { top: 58px; left: 6px; width: auto; padding: 6px 8px; }
   #rivals .rv .n { display: none; }
@@ -93,3 +94,6 @@ h2 { font-family: Cinzel, serif; font-weight: 500; letter-spacing: 8px; color: #
   .hcard .hn { font-size: 14px; }
   .lore { margin: 14px auto; }
 }
+
+#btnMute { padding: 4px 8px; font-size: 16px; line-height: 1; background: transparent; border-color: rgba(156,124,69,.5); box-shadow: none; }
+#btnSplit b { color: #ffd98a; }
